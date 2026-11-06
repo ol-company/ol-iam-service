@@ -1,20 +1,31 @@
-# <tên-repo>
+# ol-iam-service
 
-> Thuộc OL-Platform. Sổ tay chung: repo `ol-handbook`.
+IAM: tenant, membership, group, role, permission, role binding theo phạm vi tài nguyên, lời mời, khóa/mở người dùng, audit log, API quyết định `POST /internal/v1/authorize`.
 
-## Mục đích
+## Cấu trúc (Clean Architecture)
 
-<Một đoạn ngắn: repo này chịu trách nhiệm gì, không chịu trách nhiệm gì.>
-
-## Bắt đầu nhanh
-
-```powershell
-lefthook install   # Bật Git hooks (quét secret, kiểm tra commit message)
+```text
+src/
+├── domain/            # Kiểu dữ liệu và quy tắc thuần — không phụ thuộc framework
+├── application/       # Use case + ports (interface) mà use case cần
+├── infrastructure/    # Hiện thực port: Drizzle/PostgreSQL, Keycloak Admin API...
+├── interfaces/http/   # Route Express (SecureRouter) — chỉ chuyển dữ liệu HTTP ↔ use case
+├── container.ts       # Composition root (Awilix)
+├── app.ts / main.ts   # Dựng Express, khởi động server
+└── migrate.ts         # Chạy migration (role *_migrator)
+migrations/            # SQL migration — viết tay, review trong PR, không sửa file đã chạy
 ```
 
-<Lệnh cài đặt, chạy, test — bổ sung ở Bước 2.>
+## Lệnh
 
-## Liên kết
+| Lệnh | Ý nghĩa |
+|---|---|
+| `pnpm install` | Cài dependency (cần `$env:NODE_AUTH_TOKEN = gh auth token`) |
+| `pnpm test` | Unit + integration test (integration cần Docker cho Testcontainers) |
+| `pnpm typecheck` / `pnpm lint` / `pnpm format` | Kiểm tra kiểu / lint / định dạng |
+| `pnpm build` | Biên dịch ra `dist/` |
+| `pnpm db:new <tên>` | Tạo file migration mới |
+| `pnpm cli bootstrap-platform-admin --email x` | Tạo platform admin đầu tiên (từ chối nếu đã có) |
+| `pnpm cli seed-demo` | Dữ liệu mẫu (chỉ local/dev) |
 
-- Kiến trúc: `ol-handbook/docs/00-kien-truc-va-quyet-dinh.md`
-- Quy trình đóng góp: file CONTRIBUTING của Organization
+Chạy cả hệ thống ở local: xem `ol-infra/local` và `ol-handbook/docs/02-source-code-va-local.md`.
