@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { createLogger } from '@ol/node-kit';
 import { syncCatalog } from './application/bootstrap-service.js';
 import { dbOptions, loadDbConfig } from './config.js';
-import { createDb, createPool, DrizzleUnitOfWork, runMigrations } from './infrastructure/db/database.js';
+import {
+  createDb,
+  createPool,
+  DrizzleUnitOfWork,
+  runMigrations,
+} from './infrastructure/db/database.js';
 
 const cfg = loadDbConfig();
 const logger = createLogger({ service: 'ol-iam-service-migrate', level: cfg.LOG_LEVEL });

@@ -26,8 +26,16 @@ export interface TenantRepository {
 export interface UserRepository {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
-  insert(input: { id: string; email: string; displayName: string | null; status: UserStatus }): Promise<User>;
-  update(id: string, patch: Partial<Pick<User, 'email' | 'displayName' | 'status' | 'mfaEnrolled' | 'lastLoginAt'>>): Promise<void>;
+  insert(input: {
+    id: string;
+    email: string;
+    displayName: string | null;
+    status: UserStatus;
+  }): Promise<User>;
+  update(
+    id: string,
+    patch: Partial<Pick<User, 'email' | 'displayName' | 'status' | 'mfaEnrolled' | 'lastLoginAt'>>,
+  ): Promise<void>;
 }
 
 export interface MembershipRepository {
@@ -36,7 +44,9 @@ export interface MembershipRepository {
   get(tenantId: string, userId: string): Promise<{ status: MembershipStatus } | null>;
   setStatus(tenantId: string, userId: string, status: MembershipStatus): Promise<boolean>;
   listMembers(tenantId: string): Promise<Member[]>;
-  listTenantsOfUser(userId: string): Promise<Array<Tenant & { membershipStatus: MembershipStatus }>>;
+  listTenantsOfUser(
+    userId: string,
+  ): Promise<Array<Tenant & { membershipStatus: MembershipStatus }>>;
 }
 
 export interface GroupRepository {
@@ -52,7 +62,13 @@ export interface GroupRepository {
 export interface RoleRepository {
   listAssignable(tenantId: string): Promise<Role[]>; // Role hệ thống loại tenant + role tùy chỉnh của tenant
   get(id: string): Promise<Role | null>;
-  createCustom(input: { tenantId: string; id: string; title: string; description: string | null; permissions: string[] }): Promise<Role>;
+  createCustom(input: {
+    tenantId: string;
+    id: string;
+    title: string;
+    description: string | null;
+    permissions: string[];
+  }): Promise<Role>;
   deleteCustom(tenantId: string, id: string): Promise<boolean>;
   countBindings(roleId: string): Promise<number>;
   syncCatalog(permissions: PermissionDef[], roles: RoleDef[]): Promise<void>;
@@ -65,12 +81,23 @@ export interface BindingRepository {
   create(input: Omit<RoleBinding, 'id' | 'createdAt'>): Promise<RoleBinding>;
   ensure(input: Omit<RoleBinding, 'id' | 'createdAt' | 'expiresAt'>): Promise<void>; // Tạo nếu chưa có (idempotent)
   delete(tenantId: string | null, id: string): Promise<boolean>;
-  deleteForPrincipal(tenantId: string, principalType: PrincipalType, principalId: string): Promise<number>;
+  deleteForPrincipal(
+    tenantId: string,
+    principalType: PrincipalType,
+    principalId: string,
+  ): Promise<number>;
   countForRole(roleId: string, resource: string): Promise<number>;
 }
 
 export interface InvitationRepository {
-  create(input: { tenantId: string; email: string; roleIds: string[]; invitedBy: string; userId: string; expiresAt: Date }): Promise<Invitation>;
+  create(input: {
+    tenantId: string;
+    email: string;
+    roleIds: string[];
+    invitedBy: string;
+    userId: string;
+    expiresAt: Date;
+  }): Promise<Invitation>;
   list(tenantId: string): Promise<Invitation[]>;
   revoke(tenantId: string, id: string): Promise<Invitation | null>;
   findPendingByUser(userId: string): Promise<Invitation[]>;
@@ -79,7 +106,11 @@ export interface InvitationRepository {
 
 export interface AuditRepository {
   append(event: Omit<AuditEvent, 'id' | 'occurredAt'> & { ip?: string | null }): Promise<void>;
-  list(filter: { tenantId: string | null; beforeId?: number; limit: number }): Promise<AuditEvent[]>;
+  list(filter: {
+    tenantId: string | null;
+    beforeId?: number;
+    limit: number;
+  }): Promise<AuditEvent[]>;
 }
 
 // Dữ kiện thô để tầng application ra quyết định phân quyền
@@ -95,8 +126,19 @@ export interface AuthzFacts {
 }
 
 export interface AuthzRepository {
-  facts(input: { principalType: PrincipalType; principalId: string; permission: string; resource: string; tenantId: string | null }): Promise<AuthzFacts>;
-  effectivePermissions(input: { principalType: PrincipalType; principalId: string; resource: string; tenantId: string | null }): Promise<string[]>;
+  facts(input: {
+    principalType: PrincipalType;
+    principalId: string;
+    permission: string;
+    resource: string;
+    tenantId: string | null;
+  }): Promise<AuthzFacts>;
+  effectivePermissions(input: {
+    principalType: PrincipalType;
+    principalId: string;
+    resource: string;
+    tenantId: string | null;
+  }): Promise<string[]>;
 }
 
 export interface Repositories {
@@ -128,7 +170,12 @@ export interface IdpUser {
 export interface IdentityProvider {
   findUserByEmail(email: string): Promise<IdpUser | null>;
   getUser(id: string): Promise<IdpUser | null>;
-  createUser(input: { email: string; displayName?: string; requiredActions: string[]; emailVerified?: boolean }): Promise<string>;
+  createUser(input: {
+    email: string;
+    displayName?: string;
+    requiredActions: string[];
+    emailVerified?: boolean;
+  }): Promise<string>;
   sendActionsEmail(userId: string, actions: string[], lifespanSeconds: number): Promise<void>;
   setEnabled(userId: string, enabled: boolean): Promise<void>;
   logout(userId: string): Promise<void>;

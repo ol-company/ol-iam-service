@@ -1,7 +1,13 @@
 // Dựng ứng dụng Express từ container — tách khỏi main.ts để test dùng lại (Supertest) mà không mở cổng.
 import express, { type Express } from 'express';
 import helmet from 'helmet';
-import { accessLogMiddleware, errorHandler, healthRouter, notFoundHandler, requestContextMiddleware } from '@ol/node-kit';
+import {
+  accessLogMiddleware,
+  errorHandler,
+  healthRouter,
+  notFoundHandler,
+  requestContextMiddleware,
+} from '@ol/node-kit';
 import type { Cradle } from './container.js';
 import { buildRoutes } from './interfaces/http/routes.js';
 

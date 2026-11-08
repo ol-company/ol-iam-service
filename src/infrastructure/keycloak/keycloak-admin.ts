@@ -36,25 +36,36 @@ export class KeycloakAdminClient implements IdentityProvider {
     try {
       res = await fetch(this.url(path), {
         method,
-        headers: { authorization: `Bearer ${token}`, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+        headers: {
+          authorization: `Bearer ${token}`,
+          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.timeout(this.o.timeoutMs ?? 5_000),
       });
     } catch {
       throw new DependencyUnavailableError('keycloak-admin');
     }
-    if (res.status === 409) throw new ConflictError('Người dùng đã tồn tại trong Identity Provider');
-    if (res.status >= 500) throw new DependencyUnavailableError(`keycloak-admin (HTTP ${res.status})`);
+    if (res.status === 409)
+      throw new ConflictError('Người dùng đã tồn tại trong Identity Provider');
+    if (res.status >= 500)
+      throw new DependencyUnavailableError(`keycloak-admin (HTTP ${res.status})`);
     return res;
   }
 
   private async expectOk(res: Response, action: string): Promise<void> {
-    if (!res.ok) throw new Error(`Keycloak ${action} thất bại: HTTP ${res.status} ${await res.text()}`);
+    if (!res.ok)
+      throw new Error(`Keycloak ${action} thất bại: HTTP ${res.status} ${await res.text()}`);
   }
 
   private toIdpUser(u: KcUser): IdpUser {
     const name = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
-    return { id: u.id, email: (u.email ?? '').toLowerCase(), enabled: u.enabled, displayName: name || null };
+    return {
+      id: u.id,
+      email: (u.email ?? '').toLowerCase(),
+      enabled: u.enabled,
+      displayName: name || null,
+    };
   }
 
   async findUserByEmail(email: string): Promise<IdpUser | null> {
@@ -71,7 +82,12 @@ export class KeycloakAdminClient implements IdentityProvider {
     return this.toIdpUser((await res.json()) as KcUser);
   }
 
-  async createUser(input: { email: string; displayName?: string; requiredActions: string[]; emailVerified?: boolean }): Promise<string> {
+  async createUser(input: {
+    email: string;
+    displayName?: string;
+    requiredActions: string[];
+    emailVerified?: boolean;
+  }): Promise<string> {
     const res = await this.call('POST', '/users', {
       username: input.email, // Đăng nhập bằng email
       email: input.email,
@@ -88,13 +104,21 @@ export class KeycloakAdminClient implements IdentityProvider {
     return id;
   }
 
-  async sendActionsEmail(userId: string, actions: string[], lifespanSeconds: number): Promise<void> {
+  async sendActionsEmail(
+    userId: string,
+    actions: string[],
+    lifespanSeconds: number,
+  ): Promise<void> {
     const qs = new URLSearchParams({
       lifespan: String(lifespanSeconds),
       client_id: this.o.clientId,
       redirect_uri: this.o.redirectUri,
     });
-    const res = await this.call('PUT', `/users/${encodeURIComponent(userId)}/execute-actions-email?${qs}`, actions);
+    const res = await this.call(
+      'PUT',
+      `/users/${encodeURIComponent(userId)}/execute-actions-email?${qs}`,
+      actions,
+    );
     await this.expectOk(res, 'gửi email hành động');
   }
 
@@ -121,7 +145,10 @@ export class KeycloakAdminClient implements IdentityProvider {
     await this.expectOk(res, 'đọc credentials');
     const creds = (await res.json()) as Array<{ id: string; type: string }>;
     for (const c of creds.filter((x) => x.type === 'otp' || x.type === 'webauthn')) {
-      const del = await this.call('DELETE', `/users/${encodeURIComponent(userId)}/credentials/${encodeURIComponent(c.id)}`);
+      const del = await this.call(
+        'DELETE',
+        `/users/${encodeURIComponent(userId)}/credentials/${encodeURIComponent(c.id)}`,
+      );
       await this.expectOk(del, 'xóa credential');
     }
   }
@@ -131,7 +158,9 @@ export class KeycloakAdminClient implements IdentityProvider {
     await this.expectOk(res, 'đọc user');
     const user = (await res.json()) as KcUser;
     const merged = Array.from(new Set([...(user.requiredActions ?? []), ...actions]));
-    const upd = await this.call('PUT', `/users/${encodeURIComponent(userId)}`, { requiredActions: merged });
+    const upd = await this.call('PUT', `/users/${encodeURIComponent(userId)}`, {
+      requiredActions: merged,
+    });
     await this.expectOk(upd, 'cập nhật required actions');
   }
 

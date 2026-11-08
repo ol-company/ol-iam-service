@@ -29,10 +29,10 @@ import {
   roleBindings,
   rolePermissions,
   roles,
-  schema,
   tenants,
   users,
 } from './schema.js';
+import type { schema } from './schema.js'; // Chỉ dùng trong `typeof schema`
 
 export type Db = PgDatabase<NodePgQueryResultHKT, typeof schema>;
 
@@ -54,7 +54,10 @@ async function mapConflict<T>(p: Promise<T>, message: string): Promise<T> {
 class DrizzleTenantRepository implements TenantRepository {
   constructor(private readonly db: Db) {}
   async create(input: { slug: string; name: string }) {
-    const [row] = await mapConflict(this.db.insert(tenants).values(input).returning(), 'Slug tenant đã tồn tại');
+    const [row] = await mapConflict(
+      this.db.insert(tenants).values(input).returning(),
+      'Slug tenant đã tồn tại',
+    );
     return row!;
   }
   async findById(id: string) {
@@ -80,9 +83,17 @@ class DrizzleUserRepository implements UserRepository {
     const [row] = await this.db.select().from(users).where(eq(users.email, email.toLowerCase()));
     return row ?? null;
   }
-  async insert(input: { id: string; email: string; displayName: string | null; status: 'invited' | 'active' | 'disabled' }) {
+  async insert(input: {
+    id: string;
+    email: string;
+    displayName: string | null;
+    status: 'invited' | 'active' | 'disabled';
+  }) {
     const [row] = await mapConflict(
-      this.db.insert(users).values({ ...input, email: input.email.toLowerCase() }).returning(),
+      this.db
+        .insert(users)
+        .values({ ...input, email: input.email.toLowerCase() })
+        .returning(),
       'Email đã được dùng bởi người dùng khác',
     );
     return row!;
@@ -153,18 +164,30 @@ class DrizzleGroupRepository implements GroupRepository {
     return rows.map((r) => ({ ...r.group, memberCount: Number(r.memberCount) }));
   }
   async get(tenantId: string, groupId: string) {
-    const [row] = await this.db.select().from(groups).where(and(eq(groups.tenantId, tenantId), eq(groups.id, groupId)));
+    const [row] = await this.db
+      .select()
+      .from(groups)
+      .where(and(eq(groups.tenantId, tenantId), eq(groups.id, groupId)));
     return row ?? null;
   }
   async create(input: { tenantId: string; name: string; description: string | null }) {
-    const [row] = await mapConflict(this.db.insert(groups).values(input).returning(), 'Tên nhóm đã tồn tại');
+    const [row] = await mapConflict(
+      this.db.insert(groups).values(input).returning(),
+      'Tên nhóm đã tồn tại',
+    );
     return row!;
   }
   async delete(tenantId: string, groupId: string) {
     // Xóa luôn binding gán cho nhóm để không còn binding "mồ côi"
     await this.db
       .delete(roleBindings)
-      .where(and(eq(roleBindings.tenantId, tenantId), eq(roleBindings.principalType, 'group'), eq(roleBindings.principalId, groupId)));
+      .where(
+        and(
+          eq(roleBindings.tenantId, tenantId),
+          eq(roleBindings.principalType, 'group'),
+          eq(roleBindings.principalId, groupId),
+        ),
+      );
     const rows = await this.db
       .delete(groups)
       .where(and(eq(groups.tenantId, tenantId), eq(groups.id, groupId)))
@@ -190,7 +213,13 @@ class DrizzleGroupRepository implements GroupRepository {
   async removeMember(tenantId: string, groupId: string, userId: string) {
     const rows = await this.db
       .delete(groupMembers)
-      .where(and(eq(groupMembers.tenantId, tenantId), eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+      .where(
+        and(
+          eq(groupMembers.tenantId, tenantId),
+          eq(groupMembers.groupId, groupId),
+          eq(groupMembers.userId, userId),
+        ),
+      )
       .returning({ userId: groupMembers.userId });
     return rows.length > 0;
   }
@@ -204,7 +233,12 @@ class DrizzleRoleRepository implements RoleRepository {
     const perms = await this.db
       .select()
       .from(rolePermissions)
-      .where(inArray(rolePermissions.roleId, rows.map((r) => r.id)));
+      .where(
+        inArray(
+          rolePermissions.roleId,
+          rows.map((r) => r.id),
+        ),
+      );
     return rows.map((r) => ({
       id: r.id,
       tenantId: r.tenantId,
@@ -212,7 +246,10 @@ class DrizzleRoleRepository implements RoleRepository {
       description: r.description,
       isSystem: r.isSystem,
       assignable: r.assignable,
-      permissions: perms.filter((p) => p.roleId === r.id).map((p) => p.permission).sort(),
+      permissions: perms
+        .filter((p) => p.roleId === r.id)
+        .map((p) => p.permission)
+        .sort(),
     }));
   }
 
@@ -220,7 +257,12 @@ class DrizzleRoleRepository implements RoleRepository {
     const rows = await this.db
       .select()
       .from(roles)
-      .where(or(and(isNull(roles.tenantId), eq(roles.assignable, 'tenant')), eq(roles.tenantId, tenantId)))
+      .where(
+        or(
+          and(isNull(roles.tenantId), eq(roles.assignable, 'tenant')),
+          eq(roles.tenantId, tenantId),
+        ),
+      )
       .orderBy(desc(roles.isSystem), roles.id);
     return this.withPermissions(rows);
   }
@@ -231,7 +273,13 @@ class DrizzleRoleRepository implements RoleRepository {
     return role ?? null;
   }
 
-  async createCustom(input: { tenantId: string; id: string; title: string; description: string | null; permissions: string[] }) {
+  async createCustom(input: {
+    tenantId: string;
+    id: string;
+    title: string;
+    description: string | null;
+    permissions: string[];
+  }) {
     await mapConflict(
       this.db.insert(roles).values({
         id: input.id,
@@ -243,7 +291,9 @@ class DrizzleRoleRepository implements RoleRepository {
       }),
       'Role đã tồn tại',
     );
-    await this.db.insert(rolePermissions).values(input.permissions.map((permission) => ({ roleId: input.id, permission })));
+    await this.db
+      .insert(rolePermissions)
+      .values(input.permissions.map((permission) => ({ roleId: input.id, permission })));
     return (await this.get(input.id))!;
   }
 
@@ -259,7 +309,10 @@ class DrizzleRoleRepository implements RoleRepository {
   }
 
   async countBindings(roleId: string) {
-    const [row] = await this.db.select({ n: count() }).from(roleBindings).where(eq(roleBindings.roleId, roleId));
+    const [row] = await this.db
+      .select({ n: count() })
+      .from(roleBindings)
+      .where(eq(roleBindings.roleId, roleId));
     return Number(row?.n ?? 0);
   }
 
@@ -268,43 +321,80 @@ class DrizzleRoleRepository implements RoleRepository {
     for (const p of permDefs) {
       await this.db
         .insert(permissions)
-        .values({ name: p.name, description: p.description, assignable: p.assignable, requiresMfa: p.requiresMfa ?? false })
+        .values({
+          name: p.name,
+          description: p.description,
+          assignable: p.assignable,
+          requiresMfa: p.requiresMfa ?? false,
+        })
         .onConflictDoUpdate({
           target: permissions.name,
-          set: { description: p.description, assignable: p.assignable, requiresMfa: p.requiresMfa ?? false },
+          set: {
+            description: p.description,
+            assignable: p.assignable,
+            requiresMfa: p.requiresMfa ?? false,
+          },
         });
     }
     for (const r of roleDefs) {
       await this.db
         .insert(roles)
-        .values({ id: r.id, title: r.title, description: r.description, isSystem: true, assignable: r.assignable })
-        .onConflictDoUpdate({ target: roles.id, set: { title: r.title, description: r.description, assignable: r.assignable } });
+        .values({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          isSystem: true,
+          assignable: r.assignable,
+        })
+        .onConflictDoUpdate({
+          target: roles.id,
+          set: { title: r.title, description: r.description, assignable: r.assignable },
+        });
       // Thay toàn bộ permission của role hệ thống bằng danh sách trong code
       await this.db.delete(rolePermissions).where(eq(rolePermissions.roleId, r.id));
-      await this.db.insert(rolePermissions).values(r.permissions.map((permission) => ({ roleId: r.id, permission })));
+      await this.db
+        .insert(rolePermissions)
+        .values(r.permissions.map((permission) => ({ roleId: r.id, permission })));
     }
   }
 
   async listPermissions() {
     const rows = await this.db.select().from(permissions).orderBy(permissions.name);
-    return rows.map((r) => ({ name: r.name, description: r.description, assignable: r.assignable, requiresMfa: r.requiresMfa }));
+    return rows.map((r) => ({
+      name: r.name,
+      description: r.description,
+      assignable: r.assignable,
+      requiresMfa: r.requiresMfa,
+    }));
   }
 }
 
 class DrizzleBindingRepository implements BindingRepository {
   constructor(private readonly db: Db) {}
   list(tenantId: string) {
-    return this.db.select().from(roleBindings).where(eq(roleBindings.tenantId, tenantId)).orderBy(roleBindings.resource, roleBindings.roleId);
+    return this.db
+      .select()
+      .from(roleBindings)
+      .where(eq(roleBindings.tenantId, tenantId))
+      .orderBy(roleBindings.resource, roleBindings.roleId);
   }
   async get(tenantId: string | null, id: string) {
     const [row] = await this.db
       .select()
       .from(roleBindings)
-      .where(and(eq(roleBindings.id, id), tenantId === null ? isNull(roleBindings.tenantId) : eq(roleBindings.tenantId, tenantId)));
+      .where(
+        and(
+          eq(roleBindings.id, id),
+          tenantId === null ? isNull(roleBindings.tenantId) : eq(roleBindings.tenantId, tenantId),
+        ),
+      );
     return row ?? null;
   }
   async create(input: Parameters<BindingRepository['create']>[0]) {
-    const [row] = await mapConflict(this.db.insert(roleBindings).values(input).returning(), 'Binding đã tồn tại');
+    const [row] = await mapConflict(
+      this.db.insert(roleBindings).values(input).returning(),
+      'Binding đã tồn tại',
+    );
     return row!;
   }
   async ensure(input: Parameters<BindingRepository['ensure']>[0]) {
@@ -313,15 +403,28 @@ class DrizzleBindingRepository implements BindingRepository {
   async delete(tenantId: string | null, id: string) {
     const rows = await this.db
       .delete(roleBindings)
-      .where(and(eq(roleBindings.id, id), tenantId === null ? isNull(roleBindings.tenantId) : eq(roleBindings.tenantId, tenantId)))
+      .where(
+        and(
+          eq(roleBindings.id, id),
+          tenantId === null ? isNull(roleBindings.tenantId) : eq(roleBindings.tenantId, tenantId),
+        ),
+      )
       .returning({ id: roleBindings.id });
     return rows.length > 0;
   }
-  async deleteForPrincipal(tenantId: string, principalType: 'user' | 'group' | 'service', principalId: string) {
+  async deleteForPrincipal(
+    tenantId: string,
+    principalType: 'user' | 'group' | 'service',
+    principalId: string,
+  ) {
     const rows = await this.db
       .delete(roleBindings)
       .where(
-        and(eq(roleBindings.tenantId, tenantId), eq(roleBindings.principalType, principalType), eq(roleBindings.principalId, principalId)),
+        and(
+          eq(roleBindings.tenantId, tenantId),
+          eq(roleBindings.principalType, principalType),
+          eq(roleBindings.principalId, principalId),
+        ),
       )
       .returning({ id: roleBindings.id });
     return rows.length;
@@ -339,27 +442,46 @@ class DrizzleInvitationRepository implements InvitationRepository {
   constructor(private readonly db: Db) {}
   async create(input: Parameters<InvitationRepository['create']>[0]) {
     const [row] = await mapConflict(
-      this.db.insert(invitations).values({ ...input, email: input.email.toLowerCase() }).returning(),
+      this.db
+        .insert(invitations)
+        .values({ ...input, email: input.email.toLowerCase() })
+        .returning(),
       'Email này đã có lời mời đang chờ',
     );
     return row!;
   }
   list(tenantId: string) {
-    return this.db.select().from(invitations).where(eq(invitations.tenantId, tenantId)).orderBy(desc(invitations.createdAt));
+    return this.db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.tenantId, tenantId))
+      .orderBy(desc(invitations.createdAt));
   }
   async revoke(tenantId: string, id: string) {
     const [row] = await this.db
       .update(invitations)
       .set({ status: 'revoked' })
-      .where(and(eq(invitations.tenantId, tenantId), eq(invitations.id, id), eq(invitations.status, 'pending')))
+      .where(
+        and(
+          eq(invitations.tenantId, tenantId),
+          eq(invitations.id, id),
+          eq(invitations.status, 'pending'),
+        ),
+      )
       .returning();
     return row ?? null;
   }
   findPendingByUser(userId: string) {
-    return this.db.select().from(invitations).where(and(eq(invitations.userId, userId), eq(invitations.status, 'pending')));
+    return this.db
+      .select()
+      .from(invitations)
+      .where(and(eq(invitations.userId, userId), eq(invitations.status, 'pending')));
   }
   async markAccepted(id: string) {
-    await this.db.update(invitations).set({ status: 'accepted', acceptedAt: new Date() }).where(eq(invitations.id, id));
+    await this.db
+      .update(invitations)
+      .set({ status: 'accepted', acceptedAt: new Date() })
+      .where(eq(invitations.id, id));
   }
 }
 
@@ -369,7 +491,11 @@ class DrizzleAuditRepository implements AuditRepository {
     await this.db.insert(auditEvents).values({ ...event, ip: event.ip ?? null });
   }
   list(filter: { tenantId: string | null; beforeId?: number; limit: number }) {
-    const conds = [filter.tenantId === null ? isNull(auditEvents.tenantId) : eq(auditEvents.tenantId, filter.tenantId)];
+    const conds = [
+      filter.tenantId === null
+        ? isNull(auditEvents.tenantId)
+        : eq(auditEvents.tenantId, filter.tenantId),
+    ];
     if (filter.beforeId) conds.push(lt(auditEvents.id, filter.beforeId));
     return this.db
       .select({

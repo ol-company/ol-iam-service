@@ -28,15 +28,25 @@ export class MeService {
       if (!u) {
         // Người dùng có trong Keycloak nhưng chưa có trong IAM (ví dụ admin realm tự tạo) — tạo hồ sơ, KHÔNG cấp quyền gì
         if (!principal.email) throw new ForbiddenError('Token không có email');
-        u = await r.users.insert({ id: userId, email: principal.email, displayName: principal.name ?? null, status: 'active' });
-        await audit(r, { id: principal.id, requestId }, { tenantId: null, action: 'iam.user.firstLogin', resource: `users/${userId}` });
+        u = await r.users.insert({
+          id: userId,
+          email: principal.email,
+          displayName: principal.name ?? null,
+          status: 'active',
+        });
+        await audit(
+          r,
+          { id: principal.id, requestId },
+          { tenantId: null, action: 'iam.user.firstLogin', resource: `users/${userId}` },
+        );
       }
       const patch: Parameters<typeof r.users.update>[1] = { lastLoginAt: new Date(), mfaEnrolled };
       if (u.status === 'invited') patch.status = 'active'; // Lần đăng nhập đầu tiên sau khi được mời
       if (principal.name && principal.name !== u.displayName) patch.displayName = principal.name;
       await r.users.update(userId, patch);
       if (u.status === 'invited') {
-        for (const inv of await r.invitations.findPendingByUser(userId)) await r.invitations.markAccepted(inv.id);
+        for (const inv of await r.invitations.findPendingByUser(userId))
+          await r.invitations.markAccepted(inv.id);
       }
       return { ...u, ...patch };
     });
@@ -44,10 +54,19 @@ export class MeService {
     const tenants = (await this.uow.repos.memberships.listTenantsOfUser(userId)).filter(
       (t) => t.membershipStatus === 'active' && t.status === 'active',
     );
-    const platformPermissions = await this.authzService.effectivePermissions(principal.id, PLATFORM);
+    const platformPermissions = await this.authzService.effectivePermissions(
+      principal.id,
+      PLATFORM,
+    );
 
     return {
-      user: { id: user.id, email: user.email, displayName: user.displayName, status: user.status, mfaEnrolled: user.mfaEnrolled },
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        status: user.status,
+        mfaEnrolled: user.mfaEnrolled,
+      },
       tenants: tenants.map((t) => ({ id: t.id, slug: t.slug, name: t.name })),
       platform: { permissions: platformPermissions },
     };

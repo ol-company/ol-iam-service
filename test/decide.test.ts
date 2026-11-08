@@ -16,16 +16,40 @@ const ok: AuthzFacts = {
 };
 
 describe('decide()', () => {
-  it('cho phép khi đủ điều kiện', () => expect(decide(ok, 'user', true)).toEqual({ allow: true, reason: 'binding' }));
-  it('mặc định từ chối khi không có binding', () => expect(decide({ ...ok, bindingId: null }, 'user', true).reason).toBe('no-binding'));
-  it('từ chối permission không tồn tại', () => expect(decide({ ...ok, permissionExists: false }, 'user', true).reason).toBe('unknown-permission'));
-  it('từ chối người dùng bị khóa', () => expect(decide({ ...ok, userStatus: 'disabled' }, 'user', true).reason).toBe('principal-disabled'));
-  it('từ chối người ngoài tenant dù có binding', () => expect(decide({ ...ok, membershipStatus: null }, 'user', true).reason).toBe('not-member'));
-  it('từ chối thành viên bị vô hiệu hóa', () => expect(decide({ ...ok, membershipStatus: 'disabled' }, 'user', true).reason).toBe('membership-disabled'));
-  it('yêu cầu MFA cho thao tác quản trị', () => expect(decide({ ...ok, permissionRequiresMfa: true }, 'user', true).reason).toBe('mfa-required'));
-  it('cho phép thao tác quản trị khi đã có MFA', () => expect(decide({ ...ok, permissionRequiresMfa: true, mfaEnrolled: true }, 'user', true).allow).toBe(true));
-  it('từ chối tenant bị đình chỉ', () => expect(decide({ ...ok, tenantStatus: 'suspended' }, 'user', true).reason).toBe('tenant-suspended'));
-  it('service không cần membership', () => expect(decide({ ...ok, userStatus: null, membershipStatus: null }, 'service', false).allow).toBe(true));
+  it('cho phép khi đủ điều kiện', () =>
+    expect(decide(ok, 'user', true)).toEqual({ allow: true, reason: 'binding' }));
+  it('mặc định từ chối khi không có binding', () =>
+    expect(decide({ ...ok, bindingId: null }, 'user', true).reason).toBe('no-binding'));
+  it('từ chối permission không tồn tại', () =>
+    expect(decide({ ...ok, permissionExists: false }, 'user', true).reason).toBe(
+      'unknown-permission',
+    ));
+  it('từ chối người dùng bị khóa', () =>
+    expect(decide({ ...ok, userStatus: 'disabled' }, 'user', true).reason).toBe(
+      'principal-disabled',
+    ));
+  it('từ chối người ngoài tenant dù có binding', () =>
+    expect(decide({ ...ok, membershipStatus: null }, 'user', true).reason).toBe('not-member'));
+  it('từ chối thành viên bị vô hiệu hóa', () =>
+    expect(decide({ ...ok, membershipStatus: 'disabled' }, 'user', true).reason).toBe(
+      'membership-disabled',
+    ));
+  it('yêu cầu MFA cho thao tác quản trị', () =>
+    expect(decide({ ...ok, permissionRequiresMfa: true }, 'user', true).reason).toBe(
+      'mfa-required',
+    ));
+  it('cho phép thao tác quản trị khi đã có MFA', () =>
+    expect(
+      decide({ ...ok, permissionRequiresMfa: true, mfaEnrolled: true }, 'user', true).allow,
+    ).toBe(true));
+  it('từ chối tenant bị đình chỉ', () =>
+    expect(decide({ ...ok, tenantStatus: 'suspended' }, 'user', true).reason).toBe(
+      'tenant-suspended',
+    ));
+  it('service không cần membership', () =>
+    expect(
+      decide({ ...ok, userStatus: null, membershipStatus: null }, 'service', false).allow,
+    ).toBe(true));
 });
 
 describe('resource', () => {

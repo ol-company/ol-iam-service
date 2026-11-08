@@ -1,7 +1,17 @@
 // Ánh xạ bảng PostgreSQL sang TypeScript cho Drizzle (chỉ dùng để truy vấn có kiểu).
 // Cấu trúc bảng thật được định nghĩa bằng SQL trong migrations/ — hai nơi phải khớp nhau;
 // test integration chạy migration thật rồi truy vấn qua schema này nên sẽ phát hiện lệch.
-import { bigint, boolean, integer, jsonb, pgSchema, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  boolean,
+  integer,
+  jsonb,
+  pgSchema,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 export const iam = pgSchema('iam');
 
@@ -9,7 +19,9 @@ export const tenants = iam.table('tenants', {
   id: uuid('id').primaryKey().defaultRandom(),
   slug: text('slug').notNull(),
   name: text('name').notNull(),
-  status: text('status', { enum: ['active', 'suspended'] }).notNull().default('active'),
+  status: text('status', { enum: ['active', 'suspended'] })
+    .notNull()
+    .default('active'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -17,7 +29,9 @@ export const users = iam.table('users', {
   id: uuid('id').primaryKey(),
   email: text('email').notNull(),
   displayName: text('display_name'),
-  status: text('status', { enum: ['invited', 'active', 'disabled'] }).notNull().default('invited'),
+  status: text('status', { enum: ['invited', 'active', 'disabled'] })
+    .notNull()
+    .default('invited'),
   mfaEnrolled: boolean('mfa_enrolled').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
@@ -28,7 +42,9 @@ export const memberships = iam.table(
   {
     tenantId: uuid('tenant_id').notNull(),
     userId: uuid('user_id').notNull(),
-    status: text('status', { enum: ['active', 'disabled'] }).notNull().default('active'),
+    status: text('status', { enum: ['active', 'disabled'] })
+      .notNull()
+      .default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.tenantId, t.userId] })],
@@ -96,7 +112,9 @@ export const invitations = iam.table('invitations', {
   tenantId: uuid('tenant_id').notNull(),
   email: text('email').notNull(),
   roleIds: text('role_ids').array().notNull(),
-  status: text('status', { enum: ['pending', 'accepted', 'revoked', 'expired'] }).notNull().default('pending'),
+  status: text('status', { enum: ['pending', 'accepted', 'revoked', 'expired'] })
+    .notNull()
+    .default('pending'),
   invitedBy: text('invited_by').notNull(),
   userId: uuid('user_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

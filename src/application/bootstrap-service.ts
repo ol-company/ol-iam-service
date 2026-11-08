@@ -44,17 +44,27 @@ export class BootstrapService {
   async bootstrapPlatformAdmin(email: string): Promise<{ userId: string; email: string }> {
     const normalized = email.trim().toLowerCase();
     if ((await this.uow.repos.bindings.countForRole('roles/platform.admin', PLATFORM)) > 0) {
-      throw new ConflictError('Đã có platform admin. Bootstrap chỉ chạy một lần; dùng tài khoản admin hiện có để cấp thêm.');
+      throw new ConflictError(
+        'Đã có platform admin. Bootstrap chỉ chạy một lần; dùng tài khoản admin hiện có để cấp thêm.',
+      );
     }
     const existing = await this.idp.findUserByEmail(normalized);
     const userId =
       existing?.id ??
-      (await this.idp.createUser({ email: normalized, requiredActions: ['UPDATE_PASSWORD', 'VERIFY_EMAIL', 'CONFIGURE_TOTP'] }));
+      (await this.idp.createUser({
+        email: normalized,
+        requiredActions: ['UPDATE_PASSWORD', 'VERIFY_EMAIL', 'CONFIGURE_TOTP'],
+      }));
     if (existing) await this.idp.addRequiredActions(userId, ['CONFIGURE_TOTP']);
 
     await this.uow.run(async (r) => {
       if (!(await r.users.findById(userId))) {
-        await r.users.insert({ id: userId, email: normalized, displayName: null, status: 'invited' });
+        await r.users.insert({
+          id: userId,
+          email: normalized,
+          displayName: null,
+          status: 'invited',
+        });
       }
       await r.bindings.create({
         tenantId: null,
@@ -65,16 +75,27 @@ export class BootstrapService {
         createdBy: SYSTEM_ACTOR.id,
         expiresAt: null,
       });
-      await audit(r, SYSTEM_ACTOR, { tenantId: null, action: 'platform.admin.bootstrapped', resource: `${PLATFORM}/users/${userId}`, details: { email: normalized } });
+      await audit(r, SYSTEM_ACTOR, {
+        tenantId: null,
+        action: 'platform.admin.bootstrapped',
+        resource: `${PLATFORM}/users/${userId}`,
+        details: { email: normalized },
+      });
     });
 
-    if (!existing) await this.idp.sendActionsEmail(userId, ['UPDATE_PASSWORD', 'VERIFY_EMAIL', 'CONFIGURE_TOTP'], 72 * 3600);
+    if (!existing)
+      await this.idp.sendActionsEmail(
+        userId,
+        ['UPDATE_PASSWORD', 'VERIFY_EMAIL', 'CONFIGURE_TOTP'],
+        72 * 3600,
+      );
     return { userId, email: normalized };
   }
 
   // CHỈ cho local/dev: tạo 2 tenant và 3 người dùng có mật khẩu đặt sẵn
   async seedDemo(appEnv: string, password: string): Promise<string[]> {
-    if (!['local', 'dev'].includes(appEnv)) throw new Error('seedDemo bị chặn ngoài môi trường local/dev');
+    if (!['local', 'dev'].includes(appEnv))
+      throw new Error('seedDemo bị chặn ngoài môi trường local/dev');
     if (password.length < 12) throw new Error('SEED_PASSWORD phải dài ít nhất 12 ký tự');
     const log: string[] = [];
     const tenantsDef = [
@@ -82,9 +103,24 @@ export class BootstrapService {
       { slug: 'globex', name: 'Globex Warehousing' },
     ];
     const usersDef = [
-      { email: 'admin@acme.test', tenant: 'acme', roles: ['roles/iam.tenantAdmin', 'roles/warehouse.manager'], mfa: true },
-      { email: 'operator@acme.test', tenant: 'acme', roles: ['roles/warehouse.operator'], mfa: false },
-      { email: 'viewer@globex.test', tenant: 'globex', roles: ['roles/warehouse.viewer'], mfa: false },
+      {
+        email: 'admin@acme.test',
+        tenant: 'acme',
+        roles: ['roles/iam.tenantAdmin', 'roles/warehouse.manager'],
+        mfa: true,
+      },
+      {
+        email: 'operator@acme.test',
+        tenant: 'acme',
+        roles: ['roles/warehouse.operator'],
+        mfa: false,
+      },
+      {
+        email: 'viewer@globex.test',
+        tenant: 'globex',
+        roles: ['roles/warehouse.viewer'],
+        mfa: false,
+      },
     ];
 
     const tenantIds = new Map<string, string>();
@@ -99,16 +135,28 @@ export class BootstrapService {
       const tenantId = tenantIds.get(u.tenant)!;
       let idpUser = await this.idp.findUserByEmail(u.email);
       if (!idpUser) {
-        const id = await this.idp.createUser({ email: u.email, requiredActions: u.mfa ? ['CONFIGURE_TOTP'] : [], emailVerified: true });
+        const id = await this.idp.createUser({
+          email: u.email,
+          requiredActions: u.mfa ? ['CONFIGURE_TOTP'] : [],
+          emailVerified: true,
+        });
         await this.idp.setPassword(id, password, false);
         idpUser = { id, email: u.email, enabled: true, displayName: null };
       }
       const userId = idpUser.id;
       await this.uow.run(async (r) => {
-        if (!(await r.users.findById(userId))) await r.users.insert({ id: userId, email: u.email, displayName: null, status: 'active' });
+        if (!(await r.users.findById(userId)))
+          await r.users.insert({ id: userId, email: u.email, displayName: null, status: 'active' });
         await r.memberships.add(tenantId, userId);
         for (const roleId of u.roles) {
-          await r.bindings.ensure({ tenantId, principalType: 'user', principalId: userId, roleId, resource: tenantResource(tenantId), createdBy: SYSTEM_ACTOR.id });
+          await r.bindings.ensure({
+            tenantId,
+            principalType: 'user',
+            principalId: userId,
+            roleId,
+            resource: tenantResource(tenantId),
+            createdBy: SYSTEM_ACTOR.id,
+          });
         }
       });
       log.push(`user ${u.email} → ${u.tenant} [${u.roles.join(', ')}]`);

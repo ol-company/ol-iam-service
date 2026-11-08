@@ -67,11 +67,23 @@ beforeAll(async () => {
     ] as const) {
       await r.users.insert({ id: uid, email, displayName: null, status: 'invited' });
       await r.memberships.add(tid, uid);
-      await r.bindings.create({ tenantId: tid, principalType: 'user', principalId: uid, roleId: role, resource: `tenants/${tid}`, createdBy: 'test', expiresAt: null });
+      await r.bindings.create({
+        tenantId: tid,
+        principalType: 'user',
+        principalId: uid,
+        roleId: role,
+        resource: `tenants/${tid}`,
+        createdBy: 'test',
+        expiresAt: null,
+      });
     }
   });
   void bootstrapService;
-  for (const [uid, email] of [[ids.acmeAdmin, 'admin@acme.test'], [ids.acmeOperator, 'op@acme.test'], [ids.globexViewer, 'viewer@globex.test']]) {
+  for (const [uid, email] of [
+    [ids.acmeAdmin, 'admin@acme.test'],
+    [ids.acmeOperator, 'op@acme.test'],
+    [ids.globexViewer, 'viewer@globex.test'],
+  ]) {
     await request(app).get('/v1/me').set('authorization', as(uid!, email)).expect(200);
   }
 });
@@ -82,7 +94,10 @@ afterAll(async () => {
 
 describe('IAM API', () => {
   it('/v1/me chỉ trả tenant mà người dùng là thành viên', async () => {
-    const res = await request(app).get('/v1/me').set('authorization', as(ids.acmeOperator, 'op@acme.test')).expect(200);
+    const res = await request(app)
+      .get('/v1/me')
+      .set('authorization', as(ids.acmeOperator, 'op@acme.test'))
+      .expect(200);
     expect(res.body.tenants.map((t: { slug: string }) => t.slug)).toEqual(['acme']);
     expect(res.body.user.status).toBe('active');
   });
@@ -92,17 +107,26 @@ describe('IAM API', () => {
   });
 
   it('truy cập hợp lệ: admin ACME xem người dùng ACME', async () => {
-    const res = await request(app).get(`/v1/tenants/${ids.acme}/users`).set('authorization', as(ids.acmeAdmin)).expect(200);
+    const res = await request(app)
+      .get(`/v1/tenants/${ids.acme}/users`)
+      .set('authorization', as(ids.acmeAdmin))
+      .expect(200);
     expect(res.body).toHaveLength(2);
   });
 
   it('thiếu quyền: operator không xem được danh sách người dùng', async () => {
-    const res = await request(app).get(`/v1/tenants/${ids.acme}/users`).set('authorization', as(ids.acmeOperator)).expect(403);
+    const res = await request(app)
+      .get(`/v1/tenants/${ids.acme}/users`)
+      .set('authorization', as(ids.acmeOperator))
+      .expect(403);
     expect(res.body.details.reason).toBe('no-binding');
   });
 
   it('chéo tenant: admin ACME không vào được Globex', async () => {
-    const res = await request(app).get(`/v1/tenants/${ids.globex}/users`).set('authorization', as(ids.acmeAdmin)).expect(403);
+    const res = await request(app)
+      .get(`/v1/tenants/${ids.globex}/users`)
+      .set('authorization', as(ids.acmeAdmin))
+      .expect(403);
     expect(res.body.details.reason).toBe('not-member');
   });
 
@@ -114,7 +138,10 @@ describe('IAM API', () => {
       .expect(201);
     expect(res.body.status).toBe('pending');
     expect(idp.emails.at(-1)?.actions).toContain('UPDATE_PASSWORD');
-    const audit = await request(app).get(`/v1/tenants/${ids.acme}/audit-events`).set('authorization', as(ids.acmeAdmin)).expect(200);
+    const audit = await request(app)
+      .get(`/v1/tenants/${ids.acme}/audit-events`)
+      .set('authorization', as(ids.acmeAdmin))
+      .expect(200);
     expect(audit.body[0].action).toBe('iam.user.invited');
   });
 
@@ -127,9 +154,17 @@ describe('IAM API', () => {
   });
 
   it('không gỡ được quản trị viên cuối cùng', async () => {
-    const list = await request(app).get(`/v1/tenants/${ids.acme}/role-bindings`).set('authorization', as(ids.acmeAdmin)).expect(200);
-    const adminBinding = list.body.find((b: { roleId: string }) => b.roleId === 'roles/iam.tenantAdmin');
-    await request(app).delete(`/v1/tenants/${ids.acme}/role-bindings/${adminBinding.id}`).set('authorization', as(ids.acmeAdmin)).expect(409);
+    const list = await request(app)
+      .get(`/v1/tenants/${ids.acme}/role-bindings`)
+      .set('authorization', as(ids.acmeAdmin))
+      .expect(200);
+    const adminBinding = list.body.find(
+      (b: { roleId: string }) => b.roleId === 'roles/iam.tenantAdmin',
+    );
+    await request(app)
+      .delete(`/v1/tenants/${ids.acme}/role-bindings/${adminBinding.id}`)
+      .set('authorization', as(ids.acmeAdmin))
+      .expect(409);
   });
 
   it('vô hiệu hóa thành viên có hiệu lực ngay ở authorize', async () => {
@@ -137,9 +172,16 @@ describe('IAM API', () => {
       request(app)
         .post('/internal/v1/authorize')
         .set('authorization', 'Bearer service:ol-warehouse-service')
-        .send({ principal: `users/${ids.acmeOperator}`, permission: 'warehouse.items.list', resource: `tenants/${ids.acme}/warehouses/w1` });
+        .send({
+          principal: `users/${ids.acmeOperator}`,
+          permission: 'warehouse.items.list',
+          resource: `tenants/${ids.acme}/warehouses/w1`,
+        });
     expect((await check().expect(200)).body.allow).toBe(true);
-    await request(app).post(`/v1/tenants/${ids.acme}/users/${ids.acmeOperator}/disable`).set('authorization', as(ids.acmeAdmin)).expect(204);
+    await request(app)
+      .post(`/v1/tenants/${ids.acme}/users/${ids.acmeOperator}/disable`)
+      .set('authorization', as(ids.acmeAdmin))
+      .expect(204);
     const after = await check().expect(200);
     expect(after.body).toMatchObject({ allow: false, reason: 'membership-disabled' });
   });
@@ -148,7 +190,11 @@ describe('IAM API', () => {
     const res = await request(app)
       .post('/internal/v1/authorize')
       .set('authorization', 'Bearer service:ol-warehouse-service')
-      .send({ principal: `users/${ids.globexViewer}`, permission: 'warehouse.items.list', resource: `tenants/${ids.acme}` })
+      .send({
+        principal: `users/${ids.globexViewer}`,
+        permission: 'warehouse.items.list',
+        resource: `tenants/${ids.acme}`,
+      })
       .expect(200);
     expect(AuthorizeResponseSchema.safeParse(res.body).success).toBe(true);
     expect(res.body.allow).toBe(false);
@@ -158,7 +204,11 @@ describe('IAM API', () => {
     await request(app)
       .post('/internal/v1/authorize')
       .set('authorization', 'Bearer service:ol-bff')
-      .send({ principal: `users/${ids.acmeAdmin}`, permission: 'iam.users.list', resource: `tenants/${ids.acme}` })
+      .send({
+        principal: `users/${ids.acmeAdmin}`,
+        permission: 'iam.users.list',
+        resource: `tenants/${ids.acme}`,
+      })
       .expect(403);
   });
 

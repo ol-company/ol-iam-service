@@ -25,30 +25,105 @@ export interface RoleDef {
 
 export const PERMISSIONS: PermissionDef[] = [
   // --- Platform (đội vận hành) ---
-  { name: 'platform.tenants.create', description: 'Tạo tenant mới', assignable: 'platform', requiresMfa: true },
-  { name: 'platform.tenants.list', description: 'Liệt kê mọi tenant', assignable: 'platform', requiresMfa: true },
-  { name: 'platform.users.disable', description: 'Khóa/mở khóa người dùng trên toàn platform', assignable: 'platform', requiresMfa: true },
-  { name: 'platform.users.logout', description: 'Đăng xuất mọi phiên của người dùng', assignable: 'platform', requiresMfa: true },
-  { name: 'platform.users.resetMfa', description: 'Đặt lại MFA của người dùng', assignable: 'platform', requiresMfa: true },
-  { name: 'platform.audit.list', description: 'Xem audit log cấp platform', assignable: 'platform', requiresMfa: true },
+  {
+    name: 'platform.tenants.create',
+    description: 'Tạo tenant mới',
+    assignable: 'platform',
+    requiresMfa: true,
+  },
+  {
+    name: 'platform.tenants.list',
+    description: 'Liệt kê mọi tenant',
+    assignable: 'platform',
+    requiresMfa: true,
+  },
+  {
+    name: 'platform.users.disable',
+    description: 'Khóa/mở khóa người dùng trên toàn platform',
+    assignable: 'platform',
+    requiresMfa: true,
+  },
+  {
+    name: 'platform.users.logout',
+    description: 'Đăng xuất mọi phiên của người dùng',
+    assignable: 'platform',
+    requiresMfa: true,
+  },
+  {
+    name: 'platform.users.resetMfa',
+    description: 'Đặt lại MFA của người dùng',
+    assignable: 'platform',
+    requiresMfa: true,
+  },
+  {
+    name: 'platform.audit.list',
+    description: 'Xem audit log cấp platform',
+    assignable: 'platform',
+    requiresMfa: true,
+  },
 
   // --- IAM trong tenant ---
   { name: 'iam.tenants.get', description: 'Xem thông tin tenant', assignable: 'tenant' },
   { name: 'iam.users.list', description: 'Xem người dùng và lời mời', assignable: 'tenant' },
-  { name: 'iam.users.invite', description: 'Mời hoặc thu hồi lời mời', assignable: 'tenant', requiresMfa: true },
-  { name: 'iam.users.disable', description: 'Vô hiệu hóa thành viên trong tenant', assignable: 'tenant', requiresMfa: true },
-  { name: 'iam.users.enable', description: 'Kích hoạt lại thành viên', assignable: 'tenant', requiresMfa: true },
-  { name: 'iam.users.resetPassword', description: 'Gửi email đặt lại mật khẩu', assignable: 'tenant', requiresMfa: true },
+  {
+    name: 'iam.users.invite',
+    description: 'Mời hoặc thu hồi lời mời',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
+  {
+    name: 'iam.users.disable',
+    description: 'Vô hiệu hóa thành viên trong tenant',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
+  {
+    name: 'iam.users.enable',
+    description: 'Kích hoạt lại thành viên',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
+  {
+    name: 'iam.users.resetPassword',
+    description: 'Gửi email đặt lại mật khẩu',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
   { name: 'iam.groups.list', description: 'Xem nhóm', assignable: 'tenant' },
   { name: 'iam.groups.create', description: 'Tạo nhóm', assignable: 'tenant', requiresMfa: true },
   { name: 'iam.groups.delete', description: 'Xóa nhóm', assignable: 'tenant', requiresMfa: true },
-  { name: 'iam.groups.manageMembers', description: 'Thêm/bớt thành viên nhóm', assignable: 'tenant', requiresMfa: true },
+  {
+    name: 'iam.groups.manageMembers',
+    description: 'Thêm/bớt thành viên nhóm',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
   { name: 'iam.roles.list', description: 'Xem role', assignable: 'tenant' },
-  { name: 'iam.roles.create', description: 'Tạo role tùy chỉnh', assignable: 'tenant', requiresMfa: true },
-  { name: 'iam.roles.delete', description: 'Xóa role tùy chỉnh', assignable: 'tenant', requiresMfa: true },
+  {
+    name: 'iam.roles.create',
+    description: 'Tạo role tùy chỉnh',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
+  {
+    name: 'iam.roles.delete',
+    description: 'Xóa role tùy chỉnh',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
   { name: 'iam.roleBindings.list', description: 'Xem gán quyền', assignable: 'tenant' },
-  { name: 'iam.roleBindings.create', description: 'Gán quyền', assignable: 'tenant', requiresMfa: true },
-  { name: 'iam.roleBindings.delete', description: 'Thu hồi quyền', assignable: 'tenant', requiresMfa: true },
+  {
+    name: 'iam.roleBindings.create',
+    description: 'Gán quyền',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
+  {
+    name: 'iam.roleBindings.delete',
+    description: 'Thu hồi quyền',
+    assignable: 'tenant',
+    requiresMfa: true,
+  },
   { name: 'iam.audit.list', description: 'Xem audit log của tenant', assignable: 'tenant' },
 
   // --- Dành cho service ---
@@ -59,19 +134,35 @@ export const PERMISSIONS: PermissionDef[] = [
   { name: 'warehouse.warehouses.get', description: 'Xem kho', assignable: 'tenant' },
   { name: 'warehouse.warehouses.create', description: 'Tạo kho', assignable: 'tenant' },
   { name: 'warehouse.items.list', description: 'Liệt kê mặt hàng trong kho', assignable: 'tenant' },
-  { name: 'warehouse.items.get', description: 'Xem mặt hàng và lịch sử nhập/xuất', assignable: 'tenant' },
+  {
+    name: 'warehouse.items.get',
+    description: 'Xem mặt hàng và lịch sử nhập/xuất',
+    assignable: 'tenant',
+  },
   { name: 'warehouse.items.create', description: 'Tạo mặt hàng', assignable: 'tenant' },
   { name: 'warehouse.stock.adjust', description: 'Điều chỉnh tồn kho', assignable: 'tenant' },
 ];
 
-const iamRead = ['iam.tenants.get', 'iam.users.list', 'iam.groups.list', 'iam.roles.list', 'iam.roleBindings.list'];
-const whRead = ['warehouse.warehouses.list', 'warehouse.warehouses.get', 'warehouse.items.list', 'warehouse.items.get'];
+const iamRead = [
+  'iam.tenants.get',
+  'iam.users.list',
+  'iam.groups.list',
+  'iam.roles.list',
+  'iam.roleBindings.list',
+];
+const whRead = [
+  'warehouse.warehouses.list',
+  'warehouse.warehouses.get',
+  'warehouse.items.list',
+  'warehouse.items.get',
+];
 
 export const SYSTEM_ROLES: RoleDef[] = [
   {
     id: 'roles/platform.admin',
     title: 'Platform Admin',
-    description: 'Quản lý tenant và người dùng toàn platform. KHÔNG có quyền đọc dữ liệu nghiệp vụ của tenant.',
+    description:
+      'Quản lý tenant và người dùng toàn platform. KHÔNG có quyền đọc dữ liệu nghiệp vụ của tenant.',
     assignable: 'platform',
     permissions: PERMISSIONS.filter((p) => p.assignable === 'platform').map((p) => p.name),
   },
@@ -80,7 +171,9 @@ export const SYSTEM_ROLES: RoleDef[] = [
     title: 'Tenant Admin',
     description: 'Quản trị người dùng, nhóm, role và gán quyền trong tenant',
     assignable: 'tenant',
-    permissions: PERMISSIONS.filter((p) => p.assignable === 'tenant' && p.name.startsWith('iam.')).map((p) => p.name),
+    permissions: PERMISSIONS.filter(
+      (p) => p.assignable === 'tenant' && p.name.startsWith('iam.'),
+    ).map((p) => p.name),
   },
   {
     id: 'roles/iam.viewer',
@@ -115,7 +208,13 @@ export const SYSTEM_ROLES: RoleDef[] = [
     title: 'Warehouse Manager',
     description: 'Toàn quyền nghiệp vụ kho trong phạm vi được gán',
     assignable: 'tenant',
-    permissions: ['iam.tenants.get', ...whRead, 'warehouse.warehouses.create', 'warehouse.items.create', 'warehouse.stock.adjust'],
+    permissions: [
+      'iam.tenants.get',
+      ...whRead,
+      'warehouse.warehouses.create',
+      'warehouse.items.create',
+      'warehouse.stock.adjust',
+    ],
   },
   {
     id: 'roles/iam.authzChecker',

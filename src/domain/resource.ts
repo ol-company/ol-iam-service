@@ -23,7 +23,10 @@ export function isValidResource(resource: string): boolean {
 }
 
 // Tách "users/<id>" → { type: 'user', id }
-export function parsePrincipal(principal: string): { type: 'user' | 'group' | 'service'; id: string } {
+export function parsePrincipal(principal: string): {
+  type: 'user' | 'group' | 'service';
+  id: string;
+} {
   const [kind, id] = principal.split('/');
   if (!id) throw new Error(`Principal không hợp lệ: ${principal}`);
   const map = { users: 'user', groups: 'group', services: 'service' } as const;
