@@ -22,7 +22,10 @@ export function decide(
     if (f.permissionRequiresMfa && !f.mfaEnrolled) return { allow: false, reason: 'mfa-required' };
   }
   if (isTenantResource && f.tenantStatus !== 'active') {
-    return { allow: false, reason: f.tenantStatus === 'suspended' ? 'tenant-suspended' : 'no-binding' };
+    return {
+      allow: false,
+      reason: f.tenantStatus === 'suspended' ? 'tenant-suspended' : 'no-binding',
+    };
   }
   if (!f.bindingId) return { allow: false, reason: 'no-binding' };
   return { allow: true, reason: 'binding' };
@@ -38,8 +41,10 @@ export class AuthzService implements Authorizer {
     const p = parsePrincipal(input.principal);
     const tenantId = tenantOf(input.resource);
     // Tenant id không phải UUID thì chắc chắn không tồn tại → từ chối, không chạy SQL
-    if (tenantId !== null && !UUID.test(tenantId)) return { allow: false, reason: 'no-binding', policyVersion: 0 };
-    if (p.type === 'user' && !UUID.test(p.id)) return { allow: false, reason: 'principal-disabled', policyVersion: 0 };
+    if (tenantId !== null && !UUID.test(tenantId))
+      return { allow: false, reason: 'no-binding', policyVersion: 0 };
+    if (p.type === 'user' && !UUID.test(p.id))
+      return { allow: false, reason: 'principal-disabled', policyVersion: 0 };
     const facts = await this.uow.repos.authz.facts({
       principalType: p.type,
       principalId: p.id,
@@ -59,6 +64,11 @@ export class AuthzService implements Authorizer {
       const m = await this.uow.repos.memberships.get(tenantId, p.id);
       if (m?.status !== 'active') return [];
     }
-    return this.uow.repos.authz.effectivePermissions({ principalType: p.type, principalId: p.id, resource, tenantId });
+    return this.uow.repos.authz.effectivePermissions({
+      principalType: p.type,
+      principalId: p.id,
+      resource,
+      tenantId,
+    });
   }
 }

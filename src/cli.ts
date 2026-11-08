@@ -20,7 +20,10 @@ try {
       if (!values.email) throw new Error('Thiếu --email');
       const result = await bootstrapService.bootstrapPlatformAdmin(values.email);
       // Không in mật khẩu hay link — người dùng nhận email đặt mật khẩu + MFA
-      logger.info({ userId: result.userId, email: result.email }, 'Đã tạo platform admin, email kích hoạt đã được gửi');
+      logger.info(
+        { userId: result.userId, email: result.email },
+        'Đã tạo platform admin, email kích hoạt đã được gửi',
+      );
       break;
     }
     case 'seed-demo': {
@@ -30,7 +33,9 @@ try {
       break;
     }
     default:
-      throw new Error(`Lệnh không hợp lệ: ${command ?? '(trống)'}. Dùng: bootstrap-platform-admin | seed-demo`);
+      throw new Error(
+        `Lệnh không hợp lệ: ${command ?? '(trống)'}. Dùng: bootstrap-platform-admin | seed-demo`,
+      );
   }
 } catch (err) {
   logger.error({ err }, 'cli_failed');

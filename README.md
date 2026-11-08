@@ -18,14 +18,14 @@ migrations/            # SQL migration — viết tay, review trong PR, không s
 
 ## Lệnh
 
-| Lệnh | Ý nghĩa |
-|---|---|
-| `pnpm install` | Cài dependency (cần `$env:NODE_AUTH_TOKEN = gh auth token`) |
-| `pnpm test` | Unit + integration test (integration cần Docker cho Testcontainers) |
-| `pnpm typecheck` / `pnpm lint` / `pnpm format` | Kiểm tra kiểu / lint / định dạng |
-| `pnpm build` | Biên dịch ra `dist/` |
-| `pnpm db:new <tên>` | Tạo file migration mới |
-| `pnpm cli bootstrap-platform-admin --email x` | Tạo platform admin đầu tiên (từ chối nếu đã có) |
-| `pnpm cli seed-demo` | Dữ liệu mẫu (chỉ local/dev) |
+| Lệnh                                           | Ý nghĩa                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| `pnpm install`                                 | Cài dependency (cần `$env:NODE_AUTH_TOKEN = gh auth token`)         |
+| `pnpm test`                                    | Unit + integration test (integration cần Docker cho Testcontainers) |
+| `pnpm typecheck` / `pnpm lint` / `pnpm format` | Kiểm tra kiểu / lint / định dạng                                    |
+| `pnpm build`                                   | Biên dịch ra `dist/`                                                |
+| `pnpm db:new <tên>`                            | Tạo file migration mới                                              |
+| `pnpm cli bootstrap-platform-admin --email x`  | Tạo platform admin đầu tiên (từ chối nếu đã có)                     |
+| `pnpm cli seed-demo`                           | Dữ liệu mẫu (chỉ local/dev)                                         |
 
 Chạy cả hệ thống ở local: xem `ol-infra/local` và `ol-handbook/docs/02-source-code-va-local.md`.

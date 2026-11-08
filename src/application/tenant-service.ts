@@ -27,10 +27,19 @@ export class TenantService {
 
   async create(actor: Actor, input: { slug: string; name: string; adminEmail: string }) {
     // Chuẩn bị tài khoản quản trị viên ở Keycloak trước (ngoài transaction, idempotent theo email)
-    const prep = await this.userService.prepareInvite(input.adminEmail, ['roles/iam.tenantAdmin'], true);
+    const prep = await this.userService.prepareInvite(
+      input.adminEmail,
+      ['roles/iam.tenantAdmin'],
+      true,
+    );
     const tenant = await this.uow.run(async (r) => {
       const t = await r.tenants.create({ slug: input.slug, name: input.name });
-      await audit(r, actor, { tenantId: t.id, action: 'platform.tenant.created', resource: tenantResource(t.id), details: { slug: t.slug } });
+      await audit(r, actor, {
+        tenantId: t.id,
+        action: 'platform.tenant.created',
+        resource: tenantResource(t.id),
+        details: { slug: t.slug },
+      });
       await this.userService.persistInvite(r, actor, t.id, prep);
       return t;
     });

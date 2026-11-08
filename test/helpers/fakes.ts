@@ -7,8 +7,10 @@ import type { IdentityProvider, IdpUser } from '../../src/application/ports.js';
 export class FakeVerifier implements TokenVerifier {
   async verify(token: string): Promise<Principal> {
     const [kind, id, email] = token.split(':');
-    if (kind === 'user' && id) return { type: 'user', id: `users/${id}`, subject: id, email, token, claims: {} };
-    if (kind === 'service' && id) return { type: 'service', id: `services/${id}`, subject: id, token, claims: {} };
+    if (kind === 'user' && id)
+      return { type: 'user', id: `users/${id}`, subject: id, email, token, claims: {} };
+    if (kind === 'service' && id)
+      return { type: 'service', id: `services/${id}`, subject: id, token, claims: {} };
     throw new UnauthenticatedError();
   }
 }
@@ -26,7 +28,14 @@ export class FakeIdp implements IdentityProvider {
   }
   async createUser(input: { email: string; requiredActions: string[] }) {
     const id = randomUUID();
-    this.users.set(id, { id, email: input.email, enabled: true, displayName: null, requiredActions: input.requiredActions, otp: false });
+    this.users.set(id, {
+      id,
+      email: input.email,
+      enabled: true,
+      displayName: null,
+      requiredActions: input.requiredActions,
+      otp: false,
+    });
     return id;
   }
   async sendActionsEmail(userId: string, actions: string[]) {

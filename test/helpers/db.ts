@@ -5,7 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import pg from 'pg';
 import { syncCatalog } from '../../src/application/bootstrap-service.js';
-import { createDb, DrizzleUnitOfWork, runMigrations } from '../../src/infrastructure/db/database.js';
+import {
+  createDb,
+  DrizzleUnitOfWork,
+  runMigrations,
+} from '../../src/infrastructure/db/database.js';
 
 export interface TestDb {
   container: StartedPostgreSqlContainer;

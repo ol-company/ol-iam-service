@@ -1,7 +1,15 @@
 // COMPOSITION ROOT: nơi DUY NHẤT biết lớp cụ thể nào hiện thực interface nào.
 // Awilix tạo đối tượng và tiêm phụ thuộc theo tên (InjectionMode.PROXY: constructor nhận một object "cradle").
 // Test thay thế bất kỳ phụ thuộc nào bằng overrides (ví dụ idp giả, tokenVerifier giả).
-import { asClass, asFunction, asValue, createContainer, InjectionMode, type AwilixContainer, type Resolver } from 'awilix';
+import {
+  asClass,
+  asFunction,
+  asValue,
+  createContainer,
+  InjectionMode,
+  type AwilixContainer,
+  type Resolver,
+} from 'awilix';
 import {
   CachingAuthorizer,
   ClientCredentialsTokenProvider,
@@ -77,7 +85,10 @@ export function buildContainer(
     // Xác minh token: issuer là URL công khai, JWKS tải qua URL nội bộ
     tokenVerifier: asValue(
       new JoseTokenVerifier({
-        issuer: [config.OIDC_ISSUER, ...(config.OIDC_INTERNAL_ISSUER ? [config.OIDC_INTERNAL_ISSUER] : [])],
+        issuer: [
+          config.OIDC_ISSUER,
+          ...(config.OIDC_INTERNAL_ISSUER ? [config.OIDC_INTERNAL_ISSUER] : []),
+        ],
         audience: config.OIDC_AUDIENCE,
         jwksUri: `${realmUrl}/protocol/openid-connect/certs`,
       }),
@@ -85,7 +96,9 @@ export function buildContainer(
 
     authzService: asClass(AuthzService).singleton(),
     // Route của chính IAM dùng quyết định cục bộ (không gọi HTTP vào chính mình) + cache 30 giây
-    authorizer: asFunction(({ authzService, logger }: Cradle) => new CachingAuthorizer(authzService, { logger })).singleton(),
+    authorizer: asFunction(
+      ({ authzService, logger }: Cradle) => new CachingAuthorizer(authzService, { logger }),
+    ).singleton(),
 
     userService: asClass(UserService).singleton(),
     meService: asClass(MeService).singleton(),

@@ -36,26 +36,66 @@ export class UserService {
   }
 
   // Bước 1 (ngoài transaction): bảo đảm người dùng tồn tại trong Identity Provider
-  async prepareInvite(email: string, roleIds: string[], mfaRoles: boolean): Promise<PreparedInvite> {
+  async prepareInvite(
+    email: string,
+    roleIds: string[],
+    mfaRoles: boolean,
+  ): Promise<PreparedInvite> {
     const normalized = email.trim().toLowerCase();
     const local = await this.uow.repos.users.findByEmail(normalized);
-    if (local?.status === 'disabled') throw new ConflictError('Người dùng đang bị khóa trên toàn platform');
+    if (local?.status === 'disabled')
+      throw new ConflictError('Người dùng đang bị khóa trên toàn platform');
     if (local) {
-      return { email: normalized, userId: local.id, isNewLocalUser: false, createdInIdp: false, needsMfa: mfaRoles, roleIds };
+      return {
+        email: normalized,
+        userId: local.id,
+        isNewLocalUser: false,
+        createdInIdp: false,
+        needsMfa: mfaRoles,
+        roleIds,
+      };
     }
     const existing = await this.idp.findUserByEmail(normalized);
     if (existing) {
-      return { email: normalized, userId: existing.id, isNewLocalUser: true, createdInIdp: false, needsMfa: mfaRoles, roleIds };
+      return {
+        email: normalized,
+        userId: existing.id,
+        isNewLocalUser: true,
+        createdInIdp: false,
+        needsMfa: mfaRoles,
+        roleIds,
+      };
     }
-    const requiredActions = ['UPDATE_PASSWORD', 'VERIFY_EMAIL', ...(mfaRoles ? ['CONFIGURE_TOTP'] : [])];
+    const requiredActions = [
+      'UPDATE_PASSWORD',
+      'VERIFY_EMAIL',
+      ...(mfaRoles ? ['CONFIGURE_TOTP'] : []),
+    ];
     const userId = await this.idp.createUser({ email: normalized, requiredActions });
-    return { email: normalized, userId, isNewLocalUser: true, createdInIdp: true, needsMfa: mfaRoles, roleIds };
+    return {
+      email: normalized,
+      userId,
+      isNewLocalUser: true,
+      createdInIdp: true,
+      needsMfa: mfaRoles,
+      roleIds,
+    };
   }
 
   // Bước 2 (trong transaction): user, membership, binding, lời mời, audit
-  async persistInvite(r: Repositories, actor: Actor, tenantId: string, prep: PreparedInvite): Promise<Invitation> {
+  async persistInvite(
+    r: Repositories,
+    actor: Actor,
+    tenantId: string,
+    prep: PreparedInvite,
+  ): Promise<Invitation> {
     if (prep.isNewLocalUser) {
-      await r.users.insert({ id: prep.userId, email: prep.email, displayName: null, status: 'invited' });
+      await r.users.insert({
+        id: prep.userId,
+        email: prep.email,
+        displayName: null,
+        status: 'invited',
+      });
     }
     const existing = await r.memberships.get(tenantId, prep.userId);
     if (existing) throw new ConflictError('Người dùng đã là thành viên của tenant');
@@ -101,9 +141,17 @@ export class UserService {
     }
   }
 
-  async invite(actor: Actor, tenantId: string, input: { email: string; roleIds: string[] }): Promise<Invitation> {
+  async invite(
+    actor: Actor,
+    tenantId: string,
+    input: { email: string; roleIds: string[] },
+  ): Promise<Invitation> {
     const roles = await this.assertAssignableRoles(tenantId, input.roleIds);
-    const prep = await this.prepareInvite(input.email, input.roleIds, requiresMfa(roles.flatMap((x) => x.permissions)));
+    const prep = await this.prepareInvite(
+      input.email,
+      input.roleIds,
+      requiresMfa(roles.flatMap((x) => x.permissions)),
+    );
     const invitation = await this.uow.run((r) => this.persistInvite(r, actor, tenantId, prep));
     await this.afterInvite(prep);
     return invitation;
@@ -114,7 +162,8 @@ export class UserService {
     const assignable = await this.uow.repos.roles.listAssignable(tenantId);
     const found = roleIds.map((id) => assignable.find((x) => x.id === id));
     const missing = roleIds.filter((_, i) => !found[i]);
-    if (missing.length > 0) throw new ValidationError('Role không gán được trong tenant', { roleIds: missing });
+    if (missing.length > 0)
+      throw new ValidationError('Role không gán được trong tenant', { roleIds: missing });
     return found.filter((x) => x !== undefined);
   }
 
@@ -139,8 +188,14 @@ export class UserService {
     });
   }
 
-  async setMembershipStatus(actor: Actor, tenantId: string, userId: string, status: 'active' | 'disabled'): Promise<void> {
-    if (actor.id === `users/${userId}`) throw new ValidationError('Không thể tự thay đổi trạng thái của chính mình');
+  async setMembershipStatus(
+    actor: Actor,
+    tenantId: string,
+    userId: string,
+    status: 'active' | 'disabled',
+  ): Promise<void> {
+    if (actor.id === `users/${userId}`)
+      throw new ValidationError('Không thể tự thay đổi trạng thái của chính mình');
     await this.uow.run(async (r) => {
       const ok = await r.memberships.setStatus(tenantId, userId, status);
       if (!ok) throw new NotFoundError('Người dùng không thuộc tenant');
@@ -157,7 +212,11 @@ export class UserService {
     if (!m) throw new NotFoundError('Người dùng không thuộc tenant');
     await this.idp.sendActionsEmail(userId, ['UPDATE_PASSWORD'], 24 * 3600);
     await this.uow.run((r) =>
-      audit(r, actor, { tenantId, action: 'iam.user.passwordResetRequested', resource: `${tenantResource(tenantId)}/users/${userId}` }),
+      audit(r, actor, {
+        tenantId,
+        action: 'iam.user.passwordResetRequested',
+        resource: `${tenantResource(tenantId)}/users/${userId}`,
+      }),
     );
   }
 
@@ -170,13 +229,23 @@ export class UserService {
     if (!enabled) await this.idp.logout(userId); // Hủy mọi phiên ngay → BFF nhận back-channel logout
     await this.uow.run(async (r) => {
       await r.users.update(userId, { status: enabled ? 'active' : 'disabled' });
-      await audit(r, actor, { tenantId: null, action: enabled ? 'platform.user.enabled' : 'platform.user.disabled', resource: `${PLATFORM}/users/${userId}` });
+      await audit(r, actor, {
+        tenantId: null,
+        action: enabled ? 'platform.user.enabled' : 'platform.user.disabled',
+        resource: `${PLATFORM}/users/${userId}`,
+      });
     });
   }
 
   async logoutEverywhere(actor: Actor, userId: string): Promise<void> {
     await this.idp.logout(userId);
-    await this.uow.run((r) => audit(r, actor, { tenantId: null, action: 'platform.user.loggedOut', resource: `${PLATFORM}/users/${userId}` }));
+    await this.uow.run((r) =>
+      audit(r, actor, {
+        tenantId: null,
+        action: 'platform.user.loggedOut',
+        resource: `${PLATFORM}/users/${userId}`,
+      }),
+    );
   }
 
   async resetMfa(actor: Actor, userId: string): Promise<void> {
@@ -185,7 +254,11 @@ export class UserService {
     await this.idp.logout(userId);
     await this.uow.run(async (r) => {
       await r.users.update(userId, { mfaEnrolled: false });
-      await audit(r, actor, { tenantId: null, action: 'platform.user.mfaReset', resource: `${PLATFORM}/users/${userId}` });
+      await audit(r, actor, {
+        tenantId: null,
+        action: 'platform.user.mfaReset',
+        resource: `${PLATFORM}/users/${userId}`,
+      });
     });
   }
 }

@@ -31,7 +31,10 @@ export function createPool(cfg: DbConfig): pg.Pool {
     statement_timeout: 10_000, // Câu lệnh chạy quá 10 giây bị hủy — tránh kẹt tài nguyên
     application_name: 'ol-iam-service',
     ssl: cfg.ssl
-      ? { rejectUnauthorized: true, ...(cfg.sslCaFile ? { ca: readFileSync(cfg.sslCaFile, 'utf8') } : {}) }
+      ? {
+          rejectUnauthorized: true,
+          ...(cfg.sslCaFile ? { ca: readFileSync(cfg.sslCaFile, 'utf8') } : {}),
+        }
       : undefined,
   });
 }
@@ -51,7 +54,10 @@ export class DrizzleUnitOfWork implements UnitOfWork {
   }
 }
 
-export async function runMigrations(db: NodePgDatabase<typeof schema>, migrationsFolder: string): Promise<void> {
+export async function runMigrations(
+  db: NodePgDatabase<typeof schema>,
+  migrationsFolder: string,
+): Promise<void> {
   // Drizzle ghi lịch sử vào bảng drizzle.__drizzle_migrations; migration đã chạy sẽ được bỏ qua
   await migrate(db, { migrationsFolder });
 }
